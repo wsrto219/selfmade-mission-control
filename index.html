@@ -10,577 +10,197 @@
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    html{scroll-behavior:smooth}
+    *{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
     body{background:#F8F7F4;font-family:'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-    ::selection{background:#1A1A2E33}
-    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#D1D0CC;border-radius:10px}
+    ::selection{background:#1A1A2E33}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#D1D0CC;border-radius:10px}
     @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
     @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)}70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
-    @keyframes confetti-fall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(140px) rotate(420deg);opacity:0}}
+    @keyframes confetti-fall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(140px) rotate(420deg);opacity:0}}
     @keyframes stripe-complete{from{background-position:0 0}to{background-position:40px 0}}
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes slideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
     input,textarea,select,button{font-family:inherit}
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
     .modal-box{background:#FFF;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
-    .btn{border:none;cursor:pointer;font-weight:600;border-radius:8px;transition:all 0.15s;font-family:inherit}
-    .btn:hover{filter:brightness(0.95)}
+    .btn{border:none;cursor:pointer;font-weight:600;border-radius:8px;transition:all 0.15s;font-family:inherit}.btn:hover{filter:brightness(0.95)}
     .btn-primary{background:#1A1A2E;color:#FFF;padding:8px 18px;font-size:13px}
-    .btn-ghost{background:transparent;color:#7C7A72;padding:6px 12px;font-size:13px;border:1px solid #E5E3DE}
-    .btn-ghost:hover{border-color:#1A1A2E;color:#1A1A2E}
+    .btn-ghost{background:transparent;color:#7C7A72;padding:6px 12px;font-size:13px;border:1px solid #E5E3DE}.btn-ghost:hover{border-color:#1A1A2E;color:#1A1A2E}
     .btn-sm{padding:5px 10px;font-size:11px;border-radius:6px}
-    .input{border:1px solid #E5E3DE;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;outline:none;transition:border 0.15s;background:#FFF}
-    .input:focus{border-color:#1A1A2E}
-    .textarea{border:1px solid #E5E3DE;border-radius:8px;padding:10px 12px;font-size:13px;width:100%;outline:none;resize:vertical;min-height:80px;transition:border 0.15s;background:#FFF}
-    .textarea:focus{border-color:#1A1A2E}
-    .tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all 0.15s;border:2px solid transparent}
+    .input{border:1px solid #E5E3DE;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;outline:none;transition:border 0.15s;background:#FFF}.input:focus{border-color:#1A1A2E}
+    .textarea{border:1px solid #E5E3DE;border-radius:8px;padding:10px 12px;font-size:13px;width:100%;outline:none;resize:vertical;min-height:80px;transition:border 0.15s;background:#FFF}.textarea:focus{border-color:#1A1A2E}
   </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
 const{useState,useEffect,useRef,useCallback}=React;
-
-// ─── CONFIG ───
-// IMPORTANT: Replace this with your worker URL after deploying
-const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8787' : 'https://mission-control-api.will-c03.workers.dev';
-
+const API_BASE=window.location.hostname==='localhost'?'http://localhost:8787':'https://mission-control-api.will-c03.workers.dev';
 const POINTS={high:5,standard:3,low:1};
-const LEV_COLORS={
-  high:{bg:"#FEF3C7",text:"#92400E",border:"#FDE68A"},
-  standard:{bg:"#EFF6FF",text:"#1E40AF",border:"#BFDBFE"},
-  low:{bg:"#F0FDF4",text:"#166534",border:"#BBF7D0"},
-};
-const OWNER_COLORS={
-  Will:{bg:"#1A1A2E",text:"#FFF"},
-  Janet:{bg:"#E85D04",text:"#FFF"},
-  Jess:{bg:"#7C3AED",text:"#FFF"},
-  Mariah:{bg:"#0891B2",text:"#FFF"},
-};
-const OWNER_EMOJI={Will:"🧢",Janet:"🔥",Jess:"💼",Mariah:"📋"};
-
+const LEV_COLORS={high:{bg:"#FEF3C7",text:"#92400E",border:"#FDE68A"},standard:{bg:"#EFF6FF",text:"#1E40AF",border:"#BFDBFE"},low:{bg:"#F0FDF4",text:"#166534",border:"#BBF7D0"}};
+const OC={Will:{bg:"#1A1A2E",text:"#FFF"},Janet:{bg:"#E85D04",text:"#FFF"},Jess:{bg:"#7C3AED",text:"#FFF"},Mariah:{bg:"#0891B2",text:"#FFF"}};
+const OE={Will:"\u{1F9E2}",Janet:"\u{1F525}",Jess:"\u{1F4BC}",Mariah:"\u{1F4CB}"};
+const ALL_PEOPLE=["Will","Janet","Jess","Mariah"];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
-
-// ─── Get PIN from URL ───
-function getPin(){
-  const p=new URLSearchParams(window.location.search);
-  return p.get('pin')||'';
-}
-
-// ─── API helpers ───
+function getPin(){return new URLSearchParams(window.location.search).get('pin')||''}
 const pin=getPin();
-const headers={'Content-Type':'application/json','X-Pin':pin};
+const hdrs={'Content-Type':'application/json','X-Pin':pin};
+async function api(path,opts={}){const sep=path.includes('?')?'&':'?';const url=API_BASE+path+(pin?sep+'pin='+pin:'');const r=await fetch(url,{headers:hdrs,...opts});return r.json()}
 
-async function api(path,opts={}){
-  const sep=path.includes('?')?'&':'?';
-  const url=`${API_BASE}${path}${pin?sep+'pin='+pin:''}`;
-  const res=await fetch(url,{headers,...opts});
-  return res.json();
-}
-
-/* ─── EDIT MODAL ─── */
 function EditModal({action,onSave,onDelete,onClose,role}){
-  const[text,setText]=useState(action.text);
-  const[owner,setOwner]=useState(action.owner);
-  const[leverage,setLeverage]=useState(action.leverage);
-  const[details,setDetails]=useState(action.details||"");
-  const[visibility,setVisibility]=useState(action.visibility||"leadership");
-  const owners=role==="leadership"?["Will","Janet","Jess","Mariah"]:["Jess","Mariah"];
-  return(
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal-box" onClick={e=>e.stopPropagation()} style={{animation:"slideIn 0.2s ease"}}>
-        <div style={{padding:"24px 24px 0"}}>
-          <div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",marginBottom:20}}>Edit Task</div>
-          <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>TASK</label>
-          <input className="input" value={text} onChange={e=>setText(e.target.value)} style={{marginBottom:16}} />
-          <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>DETAILS / NOTES</label>
-          <textarea className="textarea" value={details} onChange={e=>setDetails(e.target.value)} placeholder="Context, links, notes..." style={{marginBottom:16}} />
-          <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>OWNER</label>
-          <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-            {owners.map(o=>(
-              <div key={o} onClick={()=>setOwner(o)} style={{
-                background:owner===o?OWNER_COLORS[o].bg:"#F0EFEB",
-                color:owner===o?"#FFF":"#4B4A45",fontSize:11,padding:"6px 14px",borderRadius:6,
-                cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",transition:"all 0.15s",
-              }}>{OWNER_EMOJI[o]} {o}</div>
-            ))}
-          </div>
-          <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>LEVERAGE</label>
-          <div style={{display:"flex",gap:6,marginBottom:16}}>
-            {[["high","HIGH +5"],["standard","STD +3"],["low","QUICK +1"]].map(([k,l])=>(
-              <div key={k} onClick={()=>setLeverage(k)} style={{
-                background:LEV_COLORS[k].bg,color:LEV_COLORS[k].text,
-                border:`2px solid ${leverage===k?LEV_COLORS[k].text:LEV_COLORS[k].border}`,
-                fontSize:10,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontWeight:700,
-                fontFamily:"'JetBrains Mono',monospace",transition:"all 0.15s",
-              }}>{l}</div>
-            ))}
-          </div>
-          {role==="leadership"&&(
-            <>
-              <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>VISIBILITY</label>
-              <div style={{display:"flex",gap:6,marginBottom:20}}>
-                {[["all","👁 Everyone"],["leadership","🔒 Leadership Only"]].map(([k,l])=>(
-                  <div key={k} onClick={()=>setVisibility(k)} style={{
-                    background:visibility===k?"#1A1A2E":"#F0EFEB",
-                    color:visibility===k?"#FFF":"#4B4A45",fontSize:11,padding:"6px 14px",borderRadius:6,
-                    cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",transition:"all 0.15s",
-                  }}>{l}</div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-        <div style={{padding:"16px 24px 24px",display:"flex",justifyContent:"space-between",borderTop:"1px solid #F0EFEB"}}>
-          <button className="btn btn-ghost btn-sm" onClick={onDelete} style={{color:"#DC2626",borderColor:"#FCA5A5"}}>Delete</button>
-          <div style={{display:"flex",gap:8}}>
-            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button className="btn btn-primary" onClick={()=>{if(text.trim())onSave({...action,text:text.trim(),owner,leverage,details,visibility})}}>Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const[text,setText]=useState(action.text);const[owner,setOwner]=useState(action.owner);const[leverage,setLeverage]=useState(action.leverage);const[details,setDetails]=useState(action.details||"");const[visibility,setVisibility]=useState(action.visibility||"all");
+  return(<div className="modal-bg" onClick={onClose}><div className="modal-box" onClick={e=>e.stopPropagation()} style={{animation:"slideIn 0.2s ease"}}><div style={{padding:"24px 24px 0"}}>
+    <div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",marginBottom:20}}>Edit Task</div>
+    <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>TASK</label>
+    <input className="input" value={text} onChange={e=>setText(e.target.value)} style={{marginBottom:16}} />
+    <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>DETAILS / NOTES</label>
+    <textarea className="textarea" value={details} onChange={e=>setDetails(e.target.value)} placeholder="Context, links, notes..." style={{marginBottom:16}} />
+    <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>OWNER</label>
+    <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>{ALL_PEOPLE.map(o=>(<div key={o} onClick={()=>setOwner(o)} style={{background:owner===o?OC[o].bg:"#F0EFEB",color:owner===o?"#FFF":"#4B4A45",fontSize:11,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",transition:"all 0.15s"}}>{OE[o]} {o}</div>))}</div>
+    <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>LEVERAGE</label>
+    <div style={{display:"flex",gap:6,marginBottom:16}}>{[["high","HIGH +5"],["standard","STD +3"],["low","QUICK +1"]].map(([k,l])=>(<div key={k} onClick={()=>setLeverage(k)} style={{background:LEV_COLORS[k].bg,color:LEV_COLORS[k].text,border:"2px solid "+(leverage===k?LEV_COLORS[k].text:LEV_COLORS[k].border),fontSize:10,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{l}</div>))}</div>
+    {role==="leadership"&&(<><label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>VISIBILITY</label><div style={{display:"flex",gap:6,marginBottom:20}}>{[["all","\u{1F441} Everyone"],["leadership","\u{1F512} Leadership Only"]].map(([k,l])=>(<div key={k} onClick={()=>setVisibility(k)} style={{background:visibility===k?"#1A1A2E":"#F0EFEB",color:visibility===k?"#FFF":"#4B4A45",fontSize:11,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{l}</div>))}</div></>)}
+  </div><div style={{padding:"16px 24px 24px",display:"flex",justifyContent:"space-between",borderTop:"1px solid #F0EFEB"}}>
+    {role==="leadership"?<button className="btn btn-ghost btn-sm" onClick={onDelete} style={{color:"#DC2626",borderColor:"#FCA5A5"}}>Delete</button>:<div/>}
+    <div style={{display:"flex",gap:8}}><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={()=>{if(text.trim())onSave({...action,text:text.trim(),owner,leverage,details,visibility})}}>Save</button></div>
+  </div></div></div>);
 }
 
-/* ─── ADD MODAL ─── */
 function AddModal({pillarId,onSave,onClose,role}){
-  const[text,setText]=useState("");
-  const[owner,setOwner]=useState("Will");
-  const[leverage,setLeverage]=useState("standard");
-  const[details,setDetails]=useState("");
-  const[visibility,setVisibility]=useState("all");
-  const owners=role==="leadership"?["Will","Janet","Jess","Mariah"]:["Jess","Mariah"];
-  return(
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal-box" onClick={e=>e.stopPropagation()} style={{animation:"slideIn 0.2s ease"}}>
-        <div style={{padding:"24px 24px 0"}}>
-          <div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",marginBottom:20}}>Add Task</div>
-          <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>TASK</label>
-          <input className="input" value={text} onChange={e=>setText(e.target.value)} placeholder="What needs to get done?" autoFocus style={{marginBottom:16}} />
-          <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>DETAILS</label>
-          <textarea className="textarea" value={details} onChange={e=>setDetails(e.target.value)} placeholder="Context, links, notes..." style={{marginBottom:16}} />
-          <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>OWNER</label>
-          <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-            {owners.map(o=>(
-              <div key={o} onClick={()=>setOwner(o)} style={{
-                background:owner===o?OWNER_COLORS[o].bg:"#F0EFEB",
-                color:owner===o?"#FFF":"#4B4A45",fontSize:11,padding:"6px 14px",borderRadius:6,
-                cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",
-              }}>{OWNER_EMOJI[o]} {o}</div>
-            ))}
-          </div>
-          <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>LEVERAGE</label>
-          <div style={{display:"flex",gap:6,marginBottom:16}}>
-            {[["high","HIGH +5"],["standard","STD +3"],["low","QUICK +1"]].map(([k,l])=>(
-              <div key={k} onClick={()=>setLeverage(k)} style={{
-                background:LEV_COLORS[k].bg,color:LEV_COLORS[k].text,
-                border:`2px solid ${leverage===k?LEV_COLORS[k].text:LEV_COLORS[k].border}`,
-                fontSize:10,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontWeight:700,
-                fontFamily:"'JetBrains Mono',monospace",
-              }}>{l}</div>
-            ))}
-          </div>
-          {role==="leadership"&&(
-            <>
-              <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>VISIBILITY</label>
-              <div style={{display:"flex",gap:6,marginBottom:20}}>
-                {[["all","👁 Everyone"],["leadership","🔒 Leadership Only"]].map(([k,l])=>(
-                  <div key={k} onClick={()=>setVisibility(k)} style={{
-                    background:visibility===k?"#1A1A2E":"#F0EFEB",
-                    color:visibility===k?"#FFF":"#4B4A45",fontSize:11,padding:"6px 14px",borderRadius:6,
-                    cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",
-                  }}>{l}</div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-        <div style={{padding:"16px 24px 24px",display:"flex",justifyContent:"flex-end",gap:8,borderTop:"1px solid #F0EFEB"}}>
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={()=>{if(text.trim())onSave({id:uid(),owner,text:text.trim(),leverage,details,visibility})}}>Add Task</button>
-        </div>
-      </div>
-    </div>
-  );
+  const[text,setText]=useState("");const[owner,setOwner]=useState("Will");const[leverage,setLeverage]=useState("standard");const[details,setDetails]=useState("");const[visibility,setVisibility]=useState("all");
+  return(<div className="modal-bg" onClick={onClose}><div className="modal-box" onClick={e=>e.stopPropagation()} style={{animation:"slideIn 0.2s ease"}}><div style={{padding:"24px 24px 0"}}>
+    <div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",marginBottom:20}}>Add Task</div>
+    <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>TASK</label>
+    <input className="input" value={text} onChange={e=>setText(e.target.value)} placeholder="What needs to get done?" autoFocus style={{marginBottom:16}} />
+    <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:4,fontFamily:"'JetBrains Mono',monospace"}}>DETAILS</label>
+    <textarea className="textarea" value={details} onChange={e=>setDetails(e.target.value)} placeholder="Context, links, notes..." style={{marginBottom:16}} />
+    <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>OWNER</label>
+    <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>{ALL_PEOPLE.map(o=>(<div key={o} onClick={()=>setOwner(o)} style={{background:owner===o?OC[o].bg:"#F0EFEB",color:owner===o?"#FFF":"#4B4A45",fontSize:11,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{OE[o]} {o}</div>))}</div>
+    <label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>LEVERAGE</label>
+    <div style={{display:"flex",gap:6,marginBottom:16}}>{[["high","HIGH +5"],["standard","STD +3"],["low","QUICK +1"]].map(([k,l])=>(<div key={k} onClick={()=>setLeverage(k)} style={{background:LEV_COLORS[k].bg,color:LEV_COLORS[k].text,border:"2px solid "+(leverage===k?LEV_COLORS[k].text:LEV_COLORS[k].border),fontSize:10,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{l}</div>))}</div>
+    {role==="leadership"&&(<><label style={{fontSize:11,fontWeight:700,color:"#9E9B93",display:"block",marginBottom:8,fontFamily:"'JetBrains Mono',monospace"}}>VISIBILITY</label><div style={{display:"flex",gap:6,marginBottom:20}}>{[["all","\u{1F441} Everyone"],["leadership","\u{1F512} Leadership Only"]].map(([k,l])=>(<div key={k} onClick={()=>setVisibility(k)} style={{background:visibility===k?"#1A1A2E":"#F0EFEB",color:visibility===k?"#FFF":"#4B4A45",fontSize:11,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{l}</div>))}</div></>)}
+  </div><div style={{padding:"16px 24px 24px",display:"flex",justifyContent:"flex-end",gap:8,borderTop:"1px solid #F0EFEB"}}>
+    <button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={()=>{if(text.trim())onSave({id:uid(),owner,text:text.trim(),leverage,details,visibility})}}>Add Task</button>
+  </div></div></div>);
 }
 
-/* ─── TRANSCRIPT MODAL ─── */
 function TranscriptModal({onConfirm,onClose}){
-  const[transcript,setTranscript]=useState("");
-  const[loading,setLoading]=useState(false);
-  const[preview,setPreview]=useState(null);
-  const[error,setError]=useState("");
-
-  const extract=async()=>{
-    if(!transcript.trim())return;
-    setLoading(true);setError("");
-    try{
-      const data=await api('/api/extract',{method:'POST',body:JSON.stringify({transcript})});
-      if(data.tasks)setPreview(data.tasks);
-      else setError(data.error||"Failed to extract.");
-    }catch(e){setError("Network error. Try again.")}
-    setLoading(false);
-  };
-
-  const confirm=async()=>{
-    await api('/api/extract/confirm',{method:'POST',body:JSON.stringify({tasks:preview})});
-    onConfirm();
-    onClose();
-  };
-
-  return(
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal-box" onClick={e=>e.stopPropagation()} style={{animation:"slideIn 0.2s ease",maxWidth:640}}>
-        <div style={{padding:"24px 24px 0"}}>
-          <div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",marginBottom:4}}>📝 Paste Transcript</div>
-          <div style={{fontSize:12,color:"#9E9B93",marginBottom:16}}>Drop in a call transcript — AI extracts tasks for the team.</div>
-          {!preview?(
-            <>
-              <textarea className="textarea" value={transcript} onChange={e=>setTranscript(e.target.value)}
-                placeholder="Paste your meeting transcript here..." style={{minHeight:200,marginBottom:12}} />
-              {error&&<div style={{color:"#DC2626",fontSize:12,marginBottom:12}}>{error}</div>}
-            </>
-          ):(
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#1A1A2E",marginBottom:10}}>
-                {preview.length} tasks extracted — review before adding:
-              </div>
-              <div style={{maxHeight:340,overflowY:"auto",border:"1px solid #E5E3DE",borderRadius:10}}>
-                {preview.map((t,i)=>(
-                  <div key={i} style={{padding:"10px 14px",borderBottom:i<preview.length-1?"1px solid #F0EFEB":"none",display:"flex",alignItems:"center",gap:6}}>
-                    <div style={{
-                      background:OWNER_COLORS[t.owner]?.bg||"#1A1A2E",color:"#FFF",
-                      fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:4,
-                      fontFamily:"'JetBrains Mono',monospace",flexShrink:0,
-                    }}>{t.owner?.toUpperCase()}</div>
-                    <div style={{
-                      background:LEV_COLORS[t.leverage]?.bg||"#EFF6FF",
-                      color:LEV_COLORS[t.leverage]?.text||"#1E40AF",
-                      border:`1px solid ${LEV_COLORS[t.leverage]?.border||"#BFDBFE"}`,
-                      fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,
-                      fontFamily:"'JetBrains Mono',monospace",flexShrink:0,
-                    }}>+{POINTS[t.leverage]||3}</div>
-                    {t.visibility==="leadership"&&<span style={{fontSize:10}}>🔒</span>}
-                    <div style={{flex:1,fontSize:12,color:"#1A1A2E"}}>{t.text}</div>
-                    <button onClick={()=>setPreview(p=>p.filter((_,j)=>j!==i))} style={{
-                      background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:14,padding:"0 4px",
-                    }}>×</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div style={{padding:"16px 24px 24px",display:"flex",justifyContent:"flex-end",gap:8,borderTop:"1px solid #F0EFEB"}}>
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          {!preview?(
-            <button className="btn btn-primary" onClick={extract} disabled={loading||!transcript.trim()}
-              style={{opacity:loading||!transcript.trim()?0.5:1,display:"flex",alignItems:"center",gap:6}}>
-              {loading&&<span style={{width:14,height:14,border:"2px solid #FFF",borderTopColor:"transparent",borderRadius:"50%",display:"inline-block",animation:"spin 0.6s linear infinite"}}/>}
-              {loading?"Extracting...":"Extract Tasks"}
-            </button>
-          ):(
-            <button className="btn btn-primary" onClick={confirm} disabled={!preview.length}
-              style={{opacity:preview.length?1:0.5}}>
-              Add {preview.length} Tasks
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  const[transcript,setTranscript]=useState("");const[loading,setLoading]=useState(false);const[preview,setPreview]=useState(null);const[error,setError]=useState("");
+  const extract=async()=>{if(!transcript.trim())return;setLoading(true);setError("");try{const d=await api('/api/extract',{method:'POST',body:JSON.stringify({transcript})});if(d.tasks)setPreview(d.tasks);else setError(d.error||"Failed.")}catch(e){setError("Network error.")}setLoading(false)};
+  const confirm=async()=>{await api('/api/extract/confirm',{method:'POST',body:JSON.stringify({tasks:preview})});onConfirm();onClose()};
+  return(<div className="modal-bg" onClick={onClose}><div className="modal-box" onClick={e=>e.stopPropagation()} style={{animation:"slideIn 0.2s ease",maxWidth:640}}><div style={{padding:"24px 24px 0"}}>
+    <div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",marginBottom:4}}>{"\u{1F4DD}"} Paste Transcript</div>
+    <div style={{fontSize:12,color:"#9E9B93",marginBottom:16}}>Drop in a call transcript — AI extracts tasks for the team.</div>
+    {!preview?(<><textarea className="textarea" value={transcript} onChange={e=>setTranscript(e.target.value)} placeholder="Paste your meeting transcript here..." style={{minHeight:200,marginBottom:12}} />{error&&<div style={{color:"#DC2626",fontSize:12,marginBottom:12}}>{error}</div>}</>)
+    :(<div style={{marginBottom:16}}><div style={{fontSize:13,fontWeight:700,color:"#1A1A2E",marginBottom:10}}>{preview.length} tasks extracted — review before adding:</div>
+      <div style={{maxHeight:340,overflowY:"auto",border:"1px solid #E5E3DE",borderRadius:10}}>{preview.map((t,i)=>(<div key={i} style={{padding:"10px 14px",borderBottom:i<preview.length-1?"1px solid #F0EFEB":"none",display:"flex",alignItems:"center",gap:6}}>
+        <div style={{background:(OC[t.owner]||{bg:"#374151"}).bg,color:"#FFF",fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:4,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{(t.owner||"?").toUpperCase()}</div>
+        <div style={{background:(LEV_COLORS[t.leverage]||LEV_COLORS.standard).bg,color:(LEV_COLORS[t.leverage]||LEV_COLORS.standard).text,border:"1px solid "+(LEV_COLORS[t.leverage]||LEV_COLORS.standard).border,fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>+{POINTS[t.leverage]||3}</div>
+        {t.visibility==="leadership"&&<span style={{fontSize:10}}>{"\u{1F512}"}</span>}
+        <div style={{flex:1,fontSize:12,color:"#1A1A2E"}}>{t.text}</div>
+        <button onClick={()=>setPreview(p=>p.filter((_,j)=>j!==i))} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:14,padding:"0 4px"}}>{"\u00D7"}</button>
+      </div>))}</div></div>)}
+  </div><div style={{padding:"16px 24px 24px",display:"flex",justifyContent:"flex-end",gap:8,borderTop:"1px solid #F0EFEB"}}>
+    <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+    {!preview?(<button className="btn btn-primary" onClick={extract} disabled={loading||!transcript.trim()} style={{opacity:loading||!transcript.trim()?0.5:1,display:"flex",alignItems:"center",gap:6}}>
+      {loading&&<span style={{width:14,height:14,border:"2px solid #FFF",borderTopColor:"transparent",borderRadius:"50%",display:"inline-block",animation:"spin 0.6s linear infinite"}}/>}{loading?"Extracting...":"Extract Tasks"}
+    </button>):(<button className="btn btn-primary" onClick={confirm} disabled={!preview.length} style={{opacity:preview.length?1:0.5}}>Add {preview.length} Tasks</button>)}
+  </div></div></div>);
 }
 
-/* ─── MAIN APP ─── */
+function PendingBanner({onReview}){
+  const[pending,setPending]=useState([]);const[reviewing,setReviewing]=useState(null);
+  useEffect(()=>{const f=async()=>{try{const d=await api('/api/pending');if(d.pending)setPending(d.pending)}catch(e){}};f();const i=setInterval(f,15000);return()=>clearInterval(i)},[]);
+  const importBatch=async(b)=>{await api('/api/pending/import',{method:'POST',body:JSON.stringify({batchId:b.id,tasks:b.tasks})});setPending(p=>p.filter(x=>x.id!==b.id));setReviewing(null);onReview()};
+  const dismiss=async(b)=>{await api('/api/pending/dismiss',{method:'POST',body:JSON.stringify({batchId:b.id})});setPending(p=>p.filter(x=>x.id!==b.id));setReviewing(null)};
+  if(!pending.length)return null;
+  return(<>{pending.map(b=>(<div key={b.id} style={{maxWidth:800,margin:"0 auto",padding:"0 20px"}}><div onClick={()=>setReviewing(b)} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"12px 18px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:10,animation:"fadeUp 0.3s ease"}}>
+    <div style={{fontSize:20,animation:"pulse 2s infinite"}}>{"\u{1F4DE}"}</div>
+    <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#1E40AF"}}>New Read AI Call — {b.tasks.length} tasks extracted</div><div style={{fontSize:11,color:"#3B82F6"}}>{b.meetingTitle} {"\u00B7"} {new Date(b.receivedAt).toLocaleString()}</div></div>
+    <div style={{fontSize:12,fontWeight:700,color:"#1E40AF",background:"#DBEAFE",padding:"4px 12px",borderRadius:6}}>Review {"\u2192"}</div>
+  </div></div>))}
+  {reviewing&&(<div className="modal-bg" onClick={()=>setReviewing(null)}><div className="modal-box" onClick={e=>e.stopPropagation()} style={{animation:"slideIn 0.2s ease",maxWidth:640}}><div style={{padding:"24px 24px 0"}}>
+    <div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",marginBottom:4}}>{"\u{1F4DE}"} {reviewing.meetingTitle}</div>
+    <div style={{fontSize:12,color:"#9E9B93",marginBottom:16}}>{reviewing.tasks.length} tasks extracted {"\u00B7"} {new Date(reviewing.receivedAt).toLocaleString()}</div>
+    <div style={{maxHeight:400,overflowY:"auto",border:"1px solid #E5E3DE",borderRadius:10}}>{reviewing.tasks.map((t,i)=>(<div key={i} style={{padding:"10px 14px",borderBottom:i<reviewing.tasks.length-1?"1px solid #F0EFEB":"none",display:"flex",alignItems:"center",gap:6}}>
+      <div style={{background:(OC[t.owner]||{bg:"#374151"}).bg,color:"#FFF",fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:4,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{(t.owner||"?").toUpperCase()}</div>
+      <div style={{background:(LEV_COLORS[t.leverage]||LEV_COLORS.standard).bg,color:(LEV_COLORS[t.leverage]||LEV_COLORS.standard).text,border:"1px solid "+(LEV_COLORS[t.leverage]||LEV_COLORS.standard).border,fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>+{POINTS[t.leverage]||3}</div>
+      <div style={{flex:1,fontSize:12,color:"#1A1A2E"}}>{t.text}</div>
+    </div>))}</div>
+  </div><div style={{padding:"16px 24px 24px",display:"flex",justifyContent:"space-between",borderTop:"1px solid #F0EFEB"}}>
+    <button className="btn btn-ghost" onClick={()=>dismiss(reviewing)} style={{color:"#DC2626"}}>Dismiss</button>
+    <div style={{display:"flex",gap:8}}><button className="btn btn-ghost" onClick={()=>setReviewing(null)}>Later</button><button className="btn btn-primary" onClick={()=>importBatch(reviewing)}>Import {reviewing.tasks.length} Tasks</button></div>
+  </div></div></div>)}
+  </>);
+}
+
 function App(){
-  const[pillars,setPillars]=useState([]);
-  const[checked,setChecked]=useState({});
-  const[role,setRole]=useState("team");
-  const[loading,setLoading]=useState(true);
-  const[filter,setFilter]=useState("All");
-  const[editAction,setEditAction]=useState(null);
-  const[addPillarId,setAddPillarId]=useState(null);
-  const[showTranscript,setShowTranscript]=useState(false);
-  const[showConfetti,setShowConfetti]=useState(false);
-  const prevPct=useRef(0);
-  const pollRef=useRef(null);
-
-  // Fetch state
-  const fetchState=useCallback(async()=>{
-    try{
-      const data=await api('/api/state');
-      if(data.pillars){setPillars(data.pillars);setChecked(data.checked||{});setRole(data.role||"team")}
-    }catch(e){console.error(e)}
-    setLoading(false);
-  },[]);
-
-  useEffect(()=>{fetchState();pollRef.current=setInterval(fetchState,15000);return()=>clearInterval(pollRef.current)},[fetchState]);
-
+  const[pillars,setPillars]=useState([]);const[checked,setChecked]=useState({});const[role,setRole]=useState("team");const[loading,setLoading]=useState(true);const[filter,setFilter]=useState("All");
+  const[editAction,setEditAction]=useState(null);const[addPillarId,setAddPillarId]=useState(null);const[showTranscript,setShowTranscript]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const prevPct=useRef(0);
+  const fetchState=useCallback(async()=>{try{const d=await api('/api/state');if(d.pillars){setPillars(d.pillars);setChecked(d.checked||{});setRole(d.role||"team")}}catch(e){}setLoading(false)},[]);
+  useEffect(()=>{fetchState();const i=setInterval(fetchState,15000);return()=>clearInterval(i)},[fetchState]);
   const is=(aId)=>!!checked[aId];
-
-  const toggle=async(aId)=>{
-    setChecked(p=>{const n={...p};n[aId]?delete n[aId]:n[aId]=true;return n});
-    await api('/api/toggle',{method:'POST',body:JSON.stringify({actionId:aId})});
-  };
-
-  const saveAction=async(updated)=>{
-    await api('/api/action',{method:'PUT',body:JSON.stringify({action:updated})});
-    setEditAction(null);
-    fetchState();
-  };
-
-  const deleteAction=async(aId)=>{
-    await api('/api/action',{method:'DELETE',body:JSON.stringify({actionId:aId})});
-    setEditAction(null);
-    fetchState();
-  };
-
-  const addAction=async(pillarId,action)=>{
-    await api('/api/action',{method:'POST',body:JSON.stringify({pillarId,action})});
-    setAddPillarId(null);
-    fetchState();
-  };
-
-  // Scores
-  const allOwners=[...new Set(pillars.flatMap(p=>p.actions.map(a=>a.owner)))].sort();
-  const scores={};const maxPts={};
-  let totalDone=0,totalActions=0;
-  pillars.forEach(p=>p.actions.forEach(a=>{
-    const pts=POINTS[a.leverage]||3;totalActions++;
-    maxPts[a.owner]=(maxPts[a.owner]||0)+pts;
-    if(is(a.id)){totalDone++;scores[a.owner]=(scores[a.owner]||0)+pts}
-  }));
-  allOwners.forEach(o=>{scores[o]=scores[o]||0;maxPts[o]=maxPts[o]||0});
+  const toggle=async(aId)=>{setChecked(p=>{const n={...p};n[aId]?delete n[aId]:n[aId]=true;return n});await api('/api/toggle',{method:'POST',body:JSON.stringify({actionId:aId})})};
+  const saveAction=async(u)=>{await api('/api/action',{method:'PUT',body:JSON.stringify({action:u})});setEditAction(null);fetchState()};
+  const deleteAction=async(aId)=>{await api('/api/action',{method:'DELETE',body:JSON.stringify({actionId:aId})});setEditAction(null);fetchState()};
+  const addAction=async(pId,a)=>{await api('/api/action',{method:'POST',body:JSON.stringify({pillarId:pId,action:a})});setAddPillarId(null);fetchState()};
+  const scores={};const maxPts={};let totalDone=0,totalActions=0;
+  ALL_PEOPLE.forEach(o=>{scores[o]=0;maxPts[o]=0});
+  pillars.forEach(p=>p.actions.forEach(a=>{const pts=POINTS[a.leverage]||3;totalActions++;maxPts[a.owner]=(maxPts[a.owner]||0)+pts;if(is(a.id)){totalDone++;scores[a.owner]=(scores[a.owner]||0)+pts}}));
   const pct=totalActions?Math.round((totalDone/totalActions)*100):0;
-
   useEffect(()=>{if(pct===100&&prevPct.current<100)setShowConfetti(true);prevPct.current=pct},[pct]);
   useEffect(()=>{if(showConfetti){const t=setTimeout(()=>setShowConfetti(false),3000);return()=>clearTimeout(t)}},[showConfetti]);
-
-  // Top scorer
-  const leaderEntries=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-  const leader=leaderEntries.length&&leaderEntries[0][1]>0&&(leaderEntries.length<2||leaderEntries[0][1]!==leaderEntries[1][1])?leaderEntries[0][0]:null;
-
-  // Filtered
-  const filterOwners=filter==="All"?null:filter==="Leadership"?["Will","Janet"]:filter==="Team"?["Jess","Mariah"]:[filter];
-  const filteredPillars=pillars.map(p=>({...p,
-    actions:filterOwners?p.actions.filter(a=>filterOwners.includes(a.owner)):p.actions,
-  })).filter(p=>p.actions.length>0);
-
-  if(loading)return(
-    <div style={{minHeight:"100vh",background:"#F8F7F4",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{textAlign:"center"}}>
-        <div style={{width:32,height:32,border:"3px solid #E5E3DE",borderTopColor:"#1A1A2E",borderRadius:"50%",animation:"spin 0.7s linear infinite",margin:"0 auto 16px"}}/>
-        <div style={{fontSize:13,color:"#9E9B93",fontWeight:600}}>Loading Mission Control...</div>
+  const le=Object.entries(scores).sort((a,b)=>b[1]-a[1]);const leader=le.length&&le[0][1]>0&&(le.length<2||le[0][1]!==le[1][1])?le[0][0]:null;
+  const filterOwners=filter==="All"?null:[filter];
+  const filteredPillars=pillars.map(p=>({...p,actions:filterOwners?p.actions.filter(a=>filterOwners.includes(a.owner)):p.actions})).filter(p=>p.actions.length>0);
+  if(loading)return(<div style={{minHeight:"100vh",background:"#F8F7F4",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center"}}><div style={{width:32,height:32,border:"3px solid #E5E3DE",borderTopColor:"#1A1A2E",borderRadius:"50%",animation:"spin 0.7s linear infinite",margin:"0 auto 16px"}}/><div style={{fontSize:13,color:"#9E9B93",fontWeight:600}}>Loading Mission Control...</div></div></div>);
+  return(<div style={{minHeight:"100vh",background:"#F8F7F4",color:"#1A1A2E"}}>
+    {showConfetti&&(<div style={{position:"fixed",top:0,left:0,right:0,zIndex:999,pointerEvents:"none"}}>{Array.from({length:30}).map((_,i)=>(<div key={i} style={{position:"absolute",top:-10,left:(5+Math.random()*90)+"%",width:7+Math.random()*7,height:7+Math.random()*7,borderRadius:Math.random()>0.5?"50%":"2px",background:["#E85D04","#2563EB","#7C3AED","#059669","#DC2626","#F59E0B"][i%6],animation:"confetti-fall "+(1.5+Math.random()*2)+"s ease-out "+Math.random()*0.6+"s forwards"}}/>))}</div>)}
+    {editAction&&<EditModal action={editAction} onSave={saveAction} onDelete={()=>deleteAction(editAction.id)} onClose={()=>setEditAction(null)} role={role}/>}
+    {addPillarId!==null&&<AddModal pillarId={addPillarId} onSave={a=>addAction(addPillarId,a)} onClose={()=>setAddPillarId(null)} role={role}/>}
+    {showTranscript&&<TranscriptModal onConfirm={fetchState} onClose={()=>setShowTranscript(false)}/>}
+    <div style={{position:"sticky",top:0,zIndex:100,background:"#F8F7F4",borderBottom:"1px solid #E5E3DE"}}><div style={{maxWidth:800,margin:"0 auto",padding:"12px 20px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><div><div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:"#9E9B93",fontFamily:"'JetBrains Mono',monospace"}}>SELFMADE</div><div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",letterSpacing:-0.3}}>Mission Control</div></div>
+          {role==="leadership"&&<div style={{fontSize:8,fontWeight:700,background:"#1A1A2E",color:"#F59E0B",padding:"2px 6px",borderRadius:4,fontFamily:"'JetBrains Mono',monospace"}}>LEAD</div>}</div>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{ALL_PEOPLE.map(o=>{const isL=leader===o;return(<div key={o} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:7,background:isL?"#1A1A2E":"#FFF",color:isL?"#F8F7F4":"#1A1A2E",border:isL?"none":"1px solid #E5E3DE",transition:"all 0.3s",fontSize:11}}>
+          <span style={{fontSize:12}}>{OE[o]}</span><span style={{fontWeight:700}}>{o}</span><span style={{fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:isL?"#F59E0B":"#7C7A72"}}>{scores[o]}</span><span style={{fontSize:8,color:isL?"#6B7280":"#C4C1B9"}}>/{maxPts[o]}</span></div>)})}</div>
+        <div style={{fontSize:11,color:"#9E9B93",fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>{totalDone}/{totalActions} {"\u00B7"} {pct}%</div>
       </div>
-    </div>
-  );
-
-  return(
-    <div style={{minHeight:"100vh",background:"#F8F7F4",color:"#1A1A2E"}}>
-
-      {showConfetti&&(
-        <div style={{position:"fixed",top:0,left:0,right:0,zIndex:999,pointerEvents:"none"}}>
-          {Array.from({length:30}).map((_,i)=>(
-            <div key={i} style={{position:"absolute",top:-10,left:`${5+Math.random()*90}%`,
-              width:7+Math.random()*7,height:7+Math.random()*7,
-              borderRadius:Math.random()>0.5?"50%":"2px",
-              background:["#E85D04","#2563EB","#7C3AED","#059669","#DC2626","#F59E0B"][i%6],
-              animation:`confetti-fall ${1.5+Math.random()*2}s ease-out ${Math.random()*0.6}s forwards`,
-            }}/>
-          ))}
-        </div>
-      )}
-
-      {editAction&&<EditModal action={editAction} onSave={saveAction} onDelete={()=>deleteAction(editAction.id)} onClose={()=>setEditAction(null)} role={role}/>}
-      {addPillarId!==null&&<AddModal pillarId={addPillarId} onSave={a=>addAction(addPillarId,a)} onClose={()=>setAddPillarId(null)} role={role}/>}
-      {showTranscript&&<TranscriptModal onConfirm={fetchState} onClose={()=>setShowTranscript(false)}/>}
-
-      {/* STICKY HEADER */}
-      <div style={{position:"sticky",top:0,zIndex:100,background:"#F8F7F4",borderBottom:"1px solid #E5E3DE"}}>
-        <div style={{maxWidth:800,margin:"0 auto",padding:"12px 20px"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div>
-                  <div style={{fontSize:9,fontWeight:700,letterSpacing:3,color:"#9E9B93",fontFamily:"'JetBrains Mono',monospace"}}>SELFMADE</div>
-                  <div style={{fontSize:16,fontWeight:800,color:"#1A1A2E",letterSpacing:-0.3}}>Mission Control</div>
-                </div>
-                {role==="leadership"&&(
-                  <div style={{fontSize:8,fontWeight:700,background:"#1A1A2E",color:"#F59E0B",padding:"2px 6px",borderRadius:4,fontFamily:"'JetBrains Mono',monospace"}}>LEAD</div>
-                )}
+      <div style={{marginTop:8,height:3,background:"#E5E3DE",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,transition:"width 0.6s cubic-bezier(.4,0,.2,1)",background:pct===100?"repeating-linear-gradient(45deg,#16A34A,#16A34A 10px,#22C55E 10px,#22C55E 20px)":"linear-gradient(90deg,#1A1A2E,#374151)",backgroundSize:pct===100?"40px 40px":"auto",animation:pct===100?"stripe-complete 1s linear infinite":"none",width:pct+"%"}}/></div>
+    </div></div>
+    <div style={{paddingTop:12}}><PendingBanner onReview={fetchState}/></div>
+    <div style={{maxWidth:800,margin:"0 auto",padding:"8px 20px 0"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+      <div style={{display:"flex",gap:3,background:"#EFEEEA",borderRadius:10,padding:3,flexWrap:"wrap"}}>{["All",...ALL_PEOPLE].map(f=>(<button key={f} onClick={()=>setFilter(f)} className="btn" style={{background:filter===f?"#FFF":"transparent",color:filter===f?"#1A1A2E":"#9E9B93",padding:"5px 12px",fontSize:11,fontWeight:700,borderRadius:7,boxShadow:filter===f?"0 1px 3px rgba(0,0,0,0.06)":"none"}}>{f==="All"?"All":(OE[f]||"")+(" "+f)}</button>))}</div>
+      <button className="btn btn-ghost btn-sm" onClick={()=>setShowTranscript(true)} style={{display:"flex",alignItems:"center",gap:4}}>{"\u{1F4DD}"} Paste Transcript</button>
+    </div></div>
+    <div style={{maxWidth:800,margin:"0 auto",padding:"14px 20px 80px"}}>
+      {filteredPillars.map((p,pIdx)=>{const allAct=pillars.find(x=>x.id===p.id)?.actions||[];const done=allAct.filter(a=>is(a.id)).length;const complete=done===allAct.length&&allAct.length>0;let earned=0,possible=0;allAct.forEach(a=>{possible+=POINTS[a.leverage]||3;if(is(a.id))earned+=POINTS[a.leverage]||3});
+        return(<div key={p.id} style={{marginBottom:14,background:complete?"#FAFFF7":"#FFF",border:complete?"1px solid #BBF7D0":"1px solid #E5E3DE",borderRadius:14,overflow:"hidden",animation:"fadeUp 0.3s cubic-bezier(.4,0,.2,1) "+pIdx*0.03+"s both",transition:"all 0.3s"}}>
+          <div style={{padding:"12px 18px",borderBottom:"1px solid "+(complete?"#BBF7D0":"#F0EFEB"),display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:20,lineHeight:1}}>{complete?"\u2705":p.icon}</span>
+            <div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontSize:13,fontWeight:800,color:"#1A1A2E"}}>{p.title}</span><span style={{fontSize:9,fontWeight:600,color:"#9E9B93",fontFamily:"'JetBrains Mono',monospace"}}>{done}/{allAct.length}</span></div><div style={{fontSize:11,color:"#9E9B93",marginTop:1,lineHeight:1.3}}>{p.tldr}</div></div>
+            <div style={{fontSize:12,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:complete?"#16A34A":"#1A1A2E",background:complete?"#DCFCE7":"#F8F7F4",padding:"3px 8px",borderRadius:5,whiteSpace:"nowrap"}}>{"\u26A1"}{earned}/{possible}</div>
+          </div>
+          {p.actions.map((a,i)=>{const d=is(a.id);const lev=LEV_COLORS[a.leverage]||LEV_COLORS.standard;const oc=OC[a.owner]||{bg:"#374151",text:"#FFF"};
+            return(<div key={a.id} style={{borderBottom:i<p.actions.length-1?"1px solid "+(complete?"#E6F9E6":"#F5F4F0"):"none"}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 18px",background:d?(complete?"#F0FDF4":"#FAFFF7"):"transparent",transition:"background 0.12s"}}>
+              <div onClick={()=>toggle(a.id)} style={{width:18,height:18,borderRadius:5,flexShrink:0,cursor:"pointer",border:d?"2px solid #22C55E":"2px solid #D1D0CC",background:d?"#22C55E":"#FFF",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s",fontSize:11,color:"#FFF",fontWeight:700,animation:d?"pulse-ring 0.5s ease":"none"}}>{d?"\u2713":""}</div>
+              <div style={{background:lev.bg,color:lev.text,border:"1px solid "+lev.border,fontSize:8,fontWeight:700,padding:"1px 4px",borderRadius:3,fontFamily:"'JetBrains Mono',monospace",flexShrink:0,opacity:d?0.4:1}}>+{POINTS[a.leverage]||3}</div>
+              <div style={{background:oc.bg,color:oc.text,fontSize:8,fontWeight:700,padding:"2px 5px",borderRadius:3,fontFamily:"'JetBrains Mono',monospace",flexShrink:0,opacity:d?0.4:1,letterSpacing:0.5}}>{a.owner.toUpperCase()}</div>
+              {role==="leadership"&&a.visibility==="leadership"&&<span style={{fontSize:10,opacity:d?0.4:0.6,flexShrink:0}} title="Leadership only">{"\u{1F512}"}</span>}
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:500,color:d?"#B0AEA6":"#1A1A2E",textDecoration:d?"line-through":"none",transition:"all 0.2s"}}>{a.text}</div>
+                {a.details&&<div style={{fontSize:10,color:"#9E9B93",marginTop:1,lineHeight:1.3}}>{a.details}</div>}
+                {a.source==="readai"&&<div style={{fontSize:9,color:"#7C3AED",marginTop:1,fontFamily:"'JetBrains Mono',monospace"}}>via Read AI</div>}
               </div>
-            </div>
-
-            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-              {allOwners.map(o=>{
-                const isLead=leader===o;
-                return(
-                  <div key={o} style={{
-                    display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:7,
-                    background:isLead?"#1A1A2E":"#FFF",color:isLead?"#F8F7F4":"#1A1A2E",
-                    border:isLead?"none":"1px solid #E5E3DE",transition:"all 0.3s",fontSize:11,
-                  }}>
-                    <span style={{fontSize:12}}>{OWNER_EMOJI[o]||"👤"}</span>
-                    <span style={{fontWeight:700}}>{o}</span>
-                    <span style={{fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:isLead?"#F59E0B":"#7C7A72"}}>{scores[o]||0}</span>
-                    <span style={{fontSize:8,color:isLead?"#6B7280":"#C4C1B9"}}>/{maxPts[o]||0}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{fontSize:11,color:"#9E9B93",fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>
-              {totalDone}/{totalActions} · {pct}%
-            </div>
-          </div>
-          <div style={{marginTop:8,height:3,background:"#E5E3DE",borderRadius:3,overflow:"hidden"}}>
-            <div style={{
-              height:"100%",borderRadius:3,transition:"width 0.6s cubic-bezier(.4,0,.2,1)",
-              background:pct===100?"repeating-linear-gradient(45deg,#16A34A,#16A34A 10px,#22C55E 10px,#22C55E 20px)":"linear-gradient(90deg,#1A1A2E,#374151)",
-              backgroundSize:pct===100?"40px 40px":"auto",
-              animation:pct===100?"stripe-complete 1s linear infinite":"none",width:`${pct}%`,
-            }}/>
-          </div>
-        </div>
-      </div>
-
-      {/* TOOLBAR */}
-      <div style={{maxWidth:800,margin:"0 auto",padding:"14px 20px 0"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-          <div style={{display:"flex",gap:3,background:"#EFEEEA",borderRadius:10,padding:3,flexWrap:"wrap"}}>
-            {["All",...(role==="leadership"?["Will","Janet","Jess","Mariah"]:allOwners)].map(f=>(
-              <button key={f} onClick={()=>setFilter(f)} className="btn" style={{
-                background:filter===f?"#FFF":"transparent",color:filter===f?"#1A1A2E":"#9E9B93",
-                padding:"5px 12px",fontSize:11,fontWeight:700,borderRadius:7,
-                boxShadow:filter===f?"0 1px 3px rgba(0,0,0,0.06)":"none",
-              }}>{f==="All"?"All":`${OWNER_EMOJI[f]||"👤"} ${f}`}</button>
-            ))}
-          </div>
-          {role==="leadership"&&(
-            <button className="btn btn-ghost btn-sm" onClick={()=>setShowTranscript(true)} style={{display:"flex",alignItems:"center",gap:4}}>
-              📝 Paste Transcript
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* PILLARS */}
-      <div style={{maxWidth:800,margin:"0 auto",padding:"14px 20px 80px"}}>
-        {filteredPillars.map((p,pIdx)=>{
-          const allActions=pillars.find(x=>x.id===p.id)?.actions||[];
-          const done=allActions.filter(a=>is(a.id)).length;
-          const complete=done===allActions.length&&allActions.length>0;
-          let earned=0,possible=0;
-          allActions.forEach(a=>{possible+=POINTS[a.leverage]||3;if(is(a.id))earned+=POINTS[a.leverage]||3});
-
-          return(
-            <div key={p.id} style={{
-              marginBottom:14,background:complete?"#FAFFF7":"#FFF",
-              border:complete?"1px solid #BBF7D0":"1px solid #E5E3DE",
-              borderRadius:14,overflow:"hidden",
-              animation:`fadeUp 0.3s cubic-bezier(.4,0,.2,1) ${pIdx*0.03}s both`,transition:"all 0.3s",
-            }}>
-              <div style={{
-                padding:"12px 18px",borderBottom:`1px solid ${complete?"#BBF7D0":"#F0EFEB"}`,
-                display:"flex",alignItems:"center",gap:10,
-              }}>
-                <span style={{fontSize:20,lineHeight:1}}>{complete?"✅":p.icon}</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <span style={{fontSize:13,fontWeight:800,color:"#1A1A2E"}}>{p.title}</span>
-                    <span style={{fontSize:9,fontWeight:600,color:"#9E9B93",fontFamily:"'JetBrains Mono',monospace"}}>{done}/{allActions.length}</span>
-                  </div>
-                  <div style={{fontSize:11,color:"#9E9B93",marginTop:1,lineHeight:1.3}}>{p.tldr}</div>
-                </div>
-                <div style={{
-                  fontSize:12,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",
-                  color:complete?"#16A34A":"#1A1A2E",background:complete?"#DCFCE7":"#F8F7F4",
-                  padding:"3px 8px",borderRadius:5,whiteSpace:"nowrap",
-                }}>⚡{earned}/{possible}</div>
-              </div>
-
-              {p.actions.map((a,i)=>{
-                const d=is(a.id);
-                const lev=LEV_COLORS[a.leverage]||LEV_COLORS.standard;
-                const oc=OWNER_COLORS[a.owner]||{bg:"#374151",text:"#FFF"};
-                return(
-                  <div key={a.id} style={{borderBottom:i<p.actions.length-1?`1px solid ${complete?"#E6F9E6":"#F5F4F0"}`:"none"}}>
-                    <div style={{
-                      display:"flex",alignItems:"center",gap:8,padding:"10px 18px",
-                      background:d?(complete?"#F0FDF4":"#FAFFF7"):"transparent",transition:"background 0.12s",
-                    }}>
-                      <div onClick={()=>toggle(a.id)} style={{
-                        width:18,height:18,borderRadius:5,flexShrink:0,cursor:"pointer",
-                        border:d?"2px solid #22C55E":"2px solid #D1D0CC",background:d?"#22C55E":"#FFF",
-                        display:"flex",alignItems:"center",justifyContent:"center",
-                        transition:"all 0.2s",fontSize:11,color:"#FFF",fontWeight:700,
-                        animation:d?"pulse-ring 0.5s ease":"none",
-                      }}>{d?"✓":""}</div>
-
-                      <div style={{
-                        background:lev.bg,color:lev.text,border:`1px solid ${lev.border}`,
-                        fontSize:8,fontWeight:700,padding:"1px 4px",borderRadius:3,
-                        fontFamily:"'JetBrains Mono',monospace",flexShrink:0,opacity:d?0.4:1,
-                      }}>+{POINTS[a.leverage]||3}</div>
-
-                      <div style={{
-                        background:oc.bg,color:oc.text,
-                        fontSize:8,fontWeight:700,padding:"2px 5px",borderRadius:3,
-                        fontFamily:"'JetBrains Mono',monospace",flexShrink:0,opacity:d?0.4:1,letterSpacing:0.5,
-                      }}>{a.owner.toUpperCase()}</div>
-
-                      {role==="leadership"&&a.visibility==="leadership"&&(
-                        <span style={{fontSize:10,opacity:d?0.4:0.6,flexShrink:0}} title="Leadership only">🔒</span>
-                      )}
-
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:12,fontWeight:500,color:d?"#B0AEA6":"#1A1A2E",textDecoration:d?"line-through":"none",transition:"all 0.2s"}}>{a.text}</div>
-                        {a.details&&<div style={{fontSize:10,color:"#9E9B93",marginTop:1,lineHeight:1.3}}>{a.details}</div>}
-                        {a.source==="readai"&&<div style={{fontSize:9,color:"#7C3AED",marginTop:1,fontFamily:"'JetBrains Mono',monospace"}}>via Read AI</div>}
-                      </div>
-
-                      {role==="leadership"&&(
-                        <button onClick={()=>setEditAction(a)} style={{
-                          background:"none",border:"none",cursor:"pointer",color:"#C4C1B9",
-                          fontSize:13,padding:"2px 4px",borderRadius:4,transition:"color 0.15s",flexShrink:0,
-                        }} onMouseEnter={e=>e.currentTarget.style.color="#1A1A2E"} onMouseLeave={e=>e.currentTarget.style.color="#C4C1B9"}>✎</button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {role==="leadership"&&(
-                <div onClick={()=>setAddPillarId(p.id)} style={{
-                  padding:"8px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,
-                  color:"#9E9B93",fontSize:11,fontWeight:600,transition:"all 0.15s",
-                  borderTop:`1px solid ${complete?"#E6F9E6":"#F5F4F0"}`,
-                }} onMouseEnter={e=>{e.currentTarget.style.color="#1A1A2E";e.currentTarget.style.background="#FAFAF8"}}
-                   onMouseLeave={e=>{e.currentTarget.style.color="#9E9B93";e.currentTarget.style.background="transparent"}}>
-                  <span style={{fontSize:14}}>+</span> Add task
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {!filteredPillars.length&&(
-          <div style={{textAlign:"center",padding:"60px 20px",color:"#9E9B93"}}>
-            <div style={{fontSize:32,marginBottom:12}}>🎯</div>
-            <div style={{fontSize:14,fontWeight:600}}>No tasks for this filter.</div>
-          </div>
-        )}
-      </div>
-
-      <div style={{textAlign:"center",padding:"20px 0 36px",borderTop:"1px solid #E5E3DE",fontSize:11,color:"#C4C1B9",fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>
-        SELFMADE · MISSION CONTROL · MARCH 2026
-      </div>
+              <button onClick={()=>setEditAction(a)} style={{background:"none",border:"none",cursor:"pointer",color:"#C4C1B9",fontSize:13,padding:"2px 4px",borderRadius:4,transition:"color 0.15s",flexShrink:0}} onMouseEnter={e=>e.currentTarget.style.color="#1A1A2E"} onMouseLeave={e=>e.currentTarget.style.color="#C4C1B9"}}>{"\u270E"}</button>
+            </div></div>)})}
+          <div onClick={()=>setAddPillarId(p.id)} style={{padding:"8px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,color:"#9E9B93",fontSize:11,fontWeight:600,transition:"all 0.15s",borderTop:"1px solid "+(complete?"#E6F9E6":"#F5F4F0")}} onMouseEnter={e=>{e.currentTarget.style.color="#1A1A2E";e.currentTarget.style.background="#FAFAF8"}} onMouseLeave={e=>{e.currentTarget.style.color="#9E9B93";e.currentTarget.style.background="transparent"}}><span style={{fontSize:14}}>+</span> Add task</div>
+        </div>)})}
+      {!filteredPillars.length&&<div style={{textAlign:"center",padding:"60px 20px",color:"#9E9B93"}}><div style={{fontSize:32,marginBottom:12}}>{"\u{1F3AF}"}</div><div style={{fontSize:14,fontWeight:600}}>No tasks for this filter.</div></div>}
     </div>
-  );
+    <div style={{textAlign:"center",padding:"20px 0 36px",borderTop:"1px solid #E5E3DE",fontSize:11,color:"#C4C1B9",fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>SELFMADE {"\u00B7"} MISSION CONTROL {"\u00B7"} MARCH 2026</div>
+  </div>);
 }
-
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>
